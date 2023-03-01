@@ -32,9 +32,15 @@ with open('currencies.csv', 'r', encoding='utf-8-sig') as file:
         db_cursor.execute('INSERT INTO Currencies (Code, FullName, Sign)'
                           'VALUES (?,?,?)', rowtuple)
         db_connection.commit()
+
+db_cursor.execute('''DROP TABLE ExchangeRates''')
+db_cursor.execute('''CREATE TABLE ExchangeRates (ID INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+BaseCurrencyId INTEGER NOT NULL, TargetCurrencyId INTEGER NOT NULL,  Rate DECIMAL(6), 
+FOREIGN KEY (BaseCurrencyId) REFERENCES Currencies(ID) ON DELETE CASCADE ON UPDATE CASCADE,
+FOREIGN KEY (TargetCurrencyId) REFERENCES Currencies(ID) ON DELETE CASCADE ON UPDATE CASCADE)''')
+db_cursor.execute('''CREATE UNIQUE INDEX CurrencyPair ON ExchangeRates(BaseCurrencyId, TargetCurrencyId)''')
+
 db_connection.close()
-
-
 
 
 
