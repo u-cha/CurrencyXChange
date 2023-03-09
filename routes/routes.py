@@ -1,4 +1,7 @@
 routes = {
+    '/': {
+        'htmlpage': 'description.html'
+    },
     '/currencies': {
         'htmlpage': 'currencies.html'
     },
@@ -14,7 +17,7 @@ routes = {
     '/exchange': {
         'htmlpage': 'exchange.html'
     },
-    404: {
+    '404': {
         'htmlpage': '404.html'
     }
 }

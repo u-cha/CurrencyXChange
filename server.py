@@ -2,15 +2,19 @@ from http.server import BaseHTTPRequestHandler
 from routes.routes import routes
 
 from httphandler.badrequesthandler import BadRequestHandler
+from httphandler.dbrequesthandler import DBRequestHandler
+
 
 class Server(BaseHTTPRequestHandler):
     def do_GET(self):
-        if self.path not in routes:
-            handler = BadRequestHandler()
-            handler.get_content(routes)
+        if self.path in routes:
+            handler = DBRequestHandler()
+            handler.get_content(routes[self.path])
             self.respond(handler)
-
-
+        else:
+            handler = BadRequestHandler()
+            handler.get_content(routes['404'])
+            self.respond(handler)
 
     def do_POST(self):
         self.respond()
@@ -25,4 +29,4 @@ class Server(BaseHTTPRequestHandler):
         self.send_response(handler.status)
         self.send_header('Content-type', handler.content_type)
         self.end_headers()
-        self.wfile.write(bytes(handler.data, 'utf-8'))
+        self.wfile.write(bytes(handler.data, encoding='utf-8'))
