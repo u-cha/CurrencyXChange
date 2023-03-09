@@ -22,8 +22,8 @@ class DBRequestHandler(BasicHandler):
     def get_currency(self, currency):
         db_connection = sqlite3.connect('database/local.db')
         db_cursor = db_connection.cursor()
-        currency = db_cursor.execute('SELECT * FROM Currencies WHERE Code=?', currency).fetchone()
+        output = db_cursor.execute('SELECT * FROM Currencies WHERE Code=?', (currency,)).fetchone()
         db_connection.close()
-        self.data = currency
+        self.data = str(output)
 
 

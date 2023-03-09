@@ -9,11 +9,14 @@ class Server(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path in routes:
             handler = DBRequestHandler()
-            handler.get_content(routes[self.path])
+            if self.path == '/currency':
+                handler.get_currency('USD')
+
+            handler.cook_html(self.path)
             self.respond(handler)
         else:
             handler = BadRequestHandler()
-            handler.get_content(routes['404'])
+            handler.cook_html('404')
             self.respond(handler)
 
     def do_POST(self):

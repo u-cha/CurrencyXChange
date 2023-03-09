@@ -1,4 +1,4 @@
-from routes.routes import routes
+from htmlcook.htmlcook import HtmlPage
 
 class BasicHandler:
     __statuses = (200, 400, 404, 409, 500)
@@ -40,3 +40,10 @@ class BasicHandler:
     @content_type.setter
     def content_type(self, content_type):
         self.__content_type = content_type
+
+    def cook_html(self, route):
+        html = HtmlPage(route, self.data)
+        html_page = html.cook()
+        return html_page
+
+
