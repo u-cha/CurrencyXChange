@@ -17,10 +17,10 @@ class Server(BaseHTTPRequestHandler):
             self.respond(handler)
 
     def do_POST(self):
-        self.respond()
+        self.do_GET()
 
     def do_PATCH(self):
-        self.respond()
+        self.do_GET()
 
     def handle_query(self):
         pass
