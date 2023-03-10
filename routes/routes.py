@@ -3,11 +3,12 @@ routes = {
         'htmlpage': 'description.html'
     },
     '/currencies': {
-        'htmlpage': 'currencies.html'
+        'method': 'get_currencies'
     },
-    '/currency': {
-        'htmlpage': 'currency.html'
+    '/currency/': {
+        'method': 'get_currency'
     },
+
     '/exchangerates': {
         'htmlpage': 'exchangerates.html'
     },

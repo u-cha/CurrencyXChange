@@ -10,9 +10,16 @@ class HtmlPage:
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>{self.title}</title>
+<title></title>
 </head>
-<body> {self.body} \n \n</body>
+<body>
+<section>
+<h1>{self.title}</h1>
+</section>
+<section>
+{self.body} \n \n
+</section>
+</body>
 </html>'''
         return html_page
 

@@ -8,9 +8,18 @@ from httphandler.dbrequesthandler import DBRequestHandler
 class Server(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path in routes:
+            route = self.path
             handler = DBRequestHandler()
-            if self.path == '/currency':
-                handler.get_currency('USD')
+            getattr(handler, routes[route]['method'])()
+            handler.cook_html(route)
+            self.respond(handler)
+
+        elif self.path.count('/') > 1 and self.path[:self.path[1:].find('/') + 2] in routes:
+            route = self.path[:self.path[1:].find('/') + 2]
+            extension = self.path[self.path[1:].find('/') + 2:]
+
+            handler = DBRequestHandler()
+            getattr(handler, routes[route]['method'])(extension)
 
             handler.cook_html(self.path)
             self.respond(handler)
@@ -25,8 +34,6 @@ class Server(BaseHTTPRequestHandler):
     def do_PATCH(self):
         self.do_GET()
 
-    def handle_query(self):
-        pass
 
     def respond(self, handler):
         self.send_response(handler.status)
