@@ -34,18 +34,22 @@ class DBRequestHandler(BasicHandler):
         self.data = json.dumps(result, indent=4)
 
 
-    def get_currency(self, currency):
-        query = 'SELECT * FROM Currencies WHERE Code=?'
-        params = (currency,)
-        response = self.get_content(query, params)
-        value = response.fetchone()
+    def get_currency(self, currency=None):
+        if currency:
+            query = 'SELECT * FROM Currencies WHERE Code=?'
+            params = (currency,)
+            response = self.get_content(query, params)
+            value = response.fetchone()
 
-        if value:
-            colnames = [col[0] for col in response.description]
-            output = dict(zip(colnames, value))
-            self.data = json.dumps(output, indent=4)
+            if value:
+                colnames = [col[0] for col in response.description]
+                output = dict(zip(colnames, value))
+                self.data = json.dumps(output, indent=4)
+            else:
+                self.data = f'Валюта {currency} не найдена в базе данных.'
         else:
-            self.data = f'Валюта {currency} не найдена в базе данных.'
+            self.data = '''Задайте код валюты, например: USD
+Пример запроса http://server_address/currency/USD'''
 
 
 

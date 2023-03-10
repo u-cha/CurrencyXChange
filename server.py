@@ -17,12 +17,12 @@ class Server(BaseHTTPRequestHandler):
         elif self.path.count('/') > 1 and self.path[:self.path[1:].find('/') + 2] in routes:
             route = self.path[:self.path[1:].find('/') + 2]
             extension = self.path[self.path[1:].find('/') + 2:]
-
             handler = DBRequestHandler()
             getattr(handler, routes[route]['method'])(extension)
 
             handler.cook_html(self.path)
             self.respond(handler)
+
         else:
             handler = BadRequestHandler()
             handler.cook_html('404')
