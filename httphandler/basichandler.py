@@ -1,5 +1,6 @@
 from htmlcook.htmlcook import HtmlPage
 
+
 class BasicHandler:
     __statuses = (200, 400, 404, 409, 500)
 

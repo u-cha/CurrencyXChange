@@ -1,22 +1,29 @@
 routes = {
-    '/': {
-        'htmlpage': 'description.html'
-    },
+
     '/currencies': {
-        'method': 'get_currencies'
+        'method': {
+            'get': 'get_currencies'
+        }
     },
-    '/currency/': {
-        'method': 'get_currency'
+    '/currency': {
+        'method': {
+            'get': 'get_currency',
+            'post': 'post_currency',
+            }
     },
 
     '/exchangerates': {
-        'htmlpage': 'exchangerates.html'
+        'method': {
+            'get': 'get_exchange_rates'
+            }
     },
     '/exchangerate': {
         'htmlpage': 'exchangerate.html'
     },
     '/exchange': {
-        'htmlpage': 'exchange.html'
+        'method': {
+            'get': 'exchangerate'
+        }
     },
     '404': {
         'htmlpage': '404.html'

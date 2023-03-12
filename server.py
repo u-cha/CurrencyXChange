@@ -1,36 +1,31 @@
 from http.server import BaseHTTPRequestHandler
-from routes.routes import routes
+from urllib.parse import urlparse
 
+from routes.routes import routes
 from httphandler.badrequesthandler import BadRequestHandler
 from httphandler.dbrequesthandler import DBRequestHandler
 
 
 class Server(BaseHTTPRequestHandler):
     def do_GET(self):
-        if self.path in routes:
-            route = self.path
+        request = urlparse(self.path, allow_fragments=False)
+        if request.path in routes:
             handler = DBRequestHandler()
-            getattr(handler, routes[route]['method'])()
-            handler.cook_html(route)
-            self.respond(handler)
-
-        elif self.path.count('/') > 1 and self.path[:self.path[1:].find('/') + 2] in routes:
-            route = self.path[:self.path[1:].find('/') + 2]
-            extension = self.path[self.path[1:].find('/') + 2:]
-            handler = DBRequestHandler()
-            getattr(handler, routes[route]['method'])(extension)
-
-            handler.cook_html(self.path)
-            self.respond(handler)
-
         else:
             handler = BadRequestHandler()
-            handler.cook_html('404')
-            self.respond(handler)
+
+        response = handler.handle(request, requesttype='get')
+        self.respond(response)
 
     def do_POST(self):
-        self.do_GET()
+        request = urlparse(self.path, allow_fragments=False)
+        if request.path in routes:
+            handler = DBRequestHandler()
+        else:
+            handler = BadRequestHandler()
 
+        response = handler.handle(request)
+        self.respond(response)
     def do_PATCH(self):
         self.do_GET()
 
