@@ -2,7 +2,7 @@ from htmlcook.htmlcook import HtmlPage
 
 
 class BasicHandler:
-    __statuses = (200, 400, 404, 409, 500)
+    __statuses = (200, 400, 404, 405, 409, 500)
 
     def __init__(self):
         self.__status = None

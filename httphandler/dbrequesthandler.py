@@ -73,7 +73,7 @@ class DBRequestHandler(BasicHandler):
 
         value = response.fetchone()
         if not value:
-            self.status = 404
+            self.status = 405
             self.data = f'Валюта {currency} не найдена в базе данных.'
             return self
 
@@ -104,8 +104,24 @@ class DBRequestHandler(BasicHandler):
             self.status = 400
             self.data = 'Incorrect currency input. Syntax is ?currency=ABC. Method takes only one currency.'
             return None
-
         return True
+
+    def __check_post_currency_query(self, query):
+        if 'name' not in query or 'code' not in query or 'sign' not in query:
+            self.status = 400
+            self.content_type = 'text/html'
+            self.data = 'Missing parameter(s). Syntax is ?name=<name>&code=ABC&sign=<sign>'
+            return None
+        if not query['name'][0].isalpha():
+            self.status = 400
+            self.content_type = 'text/html'
+            self.data = '"name" parameter can contain only letters'
+            return None
+        if not self.__check_currency_code(query['code'][0]):
+            return None
+        return True
+
+
 
     def get_currency_by_id(self, cur_id):
         db_query = 'SELECT * FROM Currencies WHERE ID=?'
@@ -115,7 +131,7 @@ class DBRequestHandler(BasicHandler):
 
         value = response.fetchone()
         if not value:
-            self.status = 404
+            self.status = 405
             self.data = f'Валюта с ID {cur_id} не найдена в базе данных.'
             return self
 
@@ -126,39 +142,22 @@ class DBRequestHandler(BasicHandler):
         return self
 
     def post_currency(self, query):
-        if (
-                'name' not in query
-                or 'code' not in query
-                or 'sign' not in query
-        ):
-            self.status = 400
-            self.content_type = 'text/html'
-            self.data = 'Missing parameter(s). Syntax is ?name=<name>&code=ABC&sign=<sign>'
-            return self
-        elif not query['name'][0].isalpha():
-            self.status = 400
-            self.content_type = 'text/html'
-            self.data = '"name" parameter can contain only letters'
-            return self
-        elif not query['code'][0].isalpha() or len(query['code'][0]) != 3:
-            self.status = 400
-            self.content_type = 'text/html'
-            self.data = '"code" parameter can contain only letters and have 3-letters length.'
+        if not self.__check_post_currency_query(query): return self
+        currency = query['code'][0].upper()
+        self.get_currency({'currency': (currency,)})
+        if self.status == 405:
+            self.status = 200
+            db_query = 'INSERT INTO Currencies ("Code", "FullName", "Sign") VALUES (?, ?, ?)'
+            params = (currency, query['name'][0].capitalize(), query['sign'][0])
+            response = self.query_database(db_query, params)
+            if not self.__check_db_response(response): return self
+            self.get_currency({'currency': (currency,)})
             return self
         else:
-            response = self.get_currency({'currency': (query['code'][0].upper(),)})
-            if response.data == f'Валюта {query["code"][0].upper()} не найдена в базе данных.':
-                db_query = '''INSERT INTO Currencies ("Code", "FullName", "Sign") 
-    VALUES (?, ?, ?)'''
-                params = (query['code'][0].upper(), query['name'][0].capitalize(), query['sign'][0])
-                self.query_database(db_query, params)
-                response = self.get_currency({'currency': (query['code'][0].upper(),)})
-                return response
-            else:
-                self.status = 409
-                self.content_type = 'text/html'
-                self.data = 'This currency code already exists in database.'
-                return self
+            self.status = 409
+            self.content_type = 'text/html'
+            self.data = 'This currency code already exists in database.'
+            return self
 
     def get_exchange_rates(self, *args):
         db_query = 'SELECT * FROM ExchangeRates'
