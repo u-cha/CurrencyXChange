@@ -15,10 +15,15 @@ routes = {
     '/exchangerates': {
         'method': {
             'get': 'get_exchange_rates'
-            }
+
+        }
     },
     '/exchangerate': {
-        'htmlpage': 'exchangerate.html'
+        'method': {
+            'get': 'get_exchange_rate',
+            'post': 'post_exchange_rate',
+            'patch': 'patch_exchange_rate'
+        }
     },
     '/exchange': {
         'method': {

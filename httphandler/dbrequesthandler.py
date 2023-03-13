@@ -121,9 +121,7 @@ class DBRequestHandler(BasicHandler):
             return None
         return True
 
-
-
-    def get_currency_by_id(self, cur_id):
+    def __get_currency_by_id(self, cur_id):
         db_query = 'SELECT * FROM Currencies WHERE ID=?'
         params = (cur_id,)
         response = self.query_database(db_query, params)
@@ -169,10 +167,129 @@ class DBRequestHandler(BasicHandler):
         for exchangerate in exchangerates:
             element = {
                 'ID': exchangerate[0],
-                'BaseCurrency': self.get_currency_by_id(exchangerate[1]).data,
-                'TargetCurrency': self.get_currency_by_id(exchangerate[2]).data,
+                'BaseCurrency': self.__get_currency_by_id(exchangerate[1]).data,
+                'TargetCurrency': self.__get_currency_by_id(exchangerate[2]).data,
                 'Rate': exchangerate[3]
             }
             result.append(element)
         self.data = result
         return self
+
+    def get_exchange_rate(self, query):
+        if not self.__check_get_exchange_rate_query(query): return self
+        currency_from = query['from'][0]
+        currency_to = query['to'][0]
+        db_query = 'SELECT * FROM ExchangeRates WHERE BaseCurrencyId =? AND TargetCurrencyId =?'
+        params = (self.__get_currency_id_by_code(currency_from), self.__get_currency_id_by_code(currency_to),)
+        response = self.query_database(db_query, params)
+        if not self.__check_db_response(response): return self
+
+        exchangerates = response.fetchall()
+        result = []
+        for exchangerate in exchangerates:
+            element = {
+                'ID': exchangerate[0],
+                'BaseCurrency': self.__get_currency_by_id(exchangerate[1]).data,
+                'TargetCurrency': self.__get_currency_by_id(exchangerate[2]).data,
+                'Rate': exchangerate[3]
+            }
+            result.append(element)
+        if len(result) == 0:
+            self.status = 406
+            self.content_type = 'text/html'
+            self.data = f'ExchangeRate for pair from={currency_from} to={currency_to} not found'
+            return self
+        self.data = result
+        return self
+
+    def __check_get_exchange_rate_query(self, query):
+        if 'from' not in query or 'to' not in query:
+            self.status = 400
+            self.content_type = 'text/html'
+            self.data = 'Missing parameter(s). Syntax is ?from=CurrencyCode&to=CurrencyCode'
+            return None
+        currency_from = query['from'][0]
+        currency_to = query['to'][0]
+        if not self.__check_currency_code(currency_from) or not self.__check_currency_code(currency_to):
+            return None
+        return True
+
+    def __get_currency_id_by_code(self, code):
+        db_query = 'SELECT ID FROM Currencies WHERE Code=?'
+        params = (code,)
+        response = self.query_database(db_query, params)
+        if not self.__check_db_response(response): return self
+
+        value = response.fetchone()
+        if not value:
+            self.status = 405
+            self.data = f'Валюта с Code {code} не найдена в базе данных.'
+            return self
+
+        output = int(value[0])
+        return output
+
+    def post_exchange_rate(self, query):
+        if not self.__check_post_exchange_rates_query(query):
+            return self
+        currency_from, currency_to, rate = query['from'][0], query['to'][0], round(float(query['rate'][0]), 6)
+        self.get_exchange_rate(query)
+        if self.status == 406:
+            self.status = 200
+            db_query = 'INSERT INTO ExchangeRates (BaseCurrencyId, TargetCurrencyId, Rate) VALUES (?,?,?)'
+            params = (self.__get_currency_id_by_code(currency_from), self.__get_currency_id_by_code(currency_to), rate,)
+            response = self.query_database(db_query, params)
+            if not self.__check_db_response(response): return self
+            self.get_exchange_rate(query)
+            return self
+        elif self.status == 500:
+            self.content_type = 'text/html'
+            self.data = 'Database error. Maybe you are trying to add rate for currencies which are not present in database.'
+            return self
+        else:
+            self.status = 409
+            self.content_type = 'text/html'
+            self.data = 'Rate for this currency pair already exists in database.'
+            return self
+
+    def patch_exchange_rate(self, query):
+        if not self.__check_post_exchange_rates_query(query):
+            return self
+        currency_from, currency_to, rate = query['from'][0], query['to'][0], round(float(query['rate'][0]), 6)
+        self.get_exchange_rate(query)
+        if self.status == 200:
+            db_query = 'UPDATE ExchangeRates SET Rate=? WHERE BaseCurrencyId=? AND TargetCurrencyId=?'
+            params = (rate, self.__get_currency_id_by_code(currency_from), self.__get_currency_id_by_code(currency_to), )
+            response = self.query_database(db_query, params)
+            if not self.__check_db_response(response): return self
+            self.get_exchange_rate(query)
+            return self
+        elif self.status == 500:
+            self.content_type = 'text/html'
+            self.data = 'Database error. Maybe you are trying to patch rates for currencies which are not present in database.'
+            return self
+        else:
+            return self
+
+    def __check_post_exchange_rates_query(self, query):
+        if 'from' not in query or 'to' not in query or 'rate' not in query:
+            self.status = 400
+            self.content_type = 'text/html'
+            self.data = 'Missing parameter(s). Syntax is ?from=CurrencyCode&to=CurrencyCode&rate=rate'
+            return None
+        currency_from = query['from'][0]
+        currency_to = query['to'][0]
+        rate = query['rate'][0]
+        if not self.__check_currency_code(currency_from) or not self.__check_currency_code(currency_to):
+            return None
+        if not self.__check_rate_is_digit(rate):
+            return None
+        return True
+
+    def __check_rate_is_digit(self, rate):
+        if rate.count('.') > 1 or len(rate) < 1 or not rate.replace('.', '').isdigit():
+            self.status = 400
+            self.content_type = 'text/html'
+            self.data = 'Incorrect rate parameter. Rate should be string representation of integer/float'
+            return None
+        return True
