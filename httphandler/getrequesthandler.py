@@ -3,41 +3,20 @@ import json
 from urllib.parse import parse_qs
 
 from httphandler.basichandler import BasicHandler
-from routes.routes import routes
+from routes import routes
 
 
-class DBRequestHandler(BasicHandler):
+class GetRequestHandler(BasicHandler):
+    __methods = {
+        '/currencies': 'get_currencies',
+        '/currency': 'get_currency',
+        '/exchangerates': 'get_exchange_rates',
+        '/exchangerate': 'get_exchange_rate'
+    }
 
     def __init__(self):
         super().__init__()
-        self.status = 200
 
-    def handle(self, request, requesttype):
-        method = routes[request.path]['method'][requesttype]
-        query = parse_qs(request.query)
-        getattr(self, method)(query)
-        self.__format_output(query)
-        return self
-
-    def __format_output(self, query):
-        if ('format' in query and query['format'][0].lower() == 'html'
-                or self.status != 200):
-            self.content_type = 'text/html'
-        else:
-            self.content_type = 'application/json'
-            self.data = json.dumps(self.data, indent=4)
-
-    def query_database(self, db_query, params=None):
-        try:
-            with sqlite3.connect('database/local.db') as db_connection:
-                db_cursor = db_connection.cursor()
-                if params:
-                    content = db_cursor.execute(db_query, params)
-                else:
-                    content = db_cursor.execute(db_query)
-        except Exception:
-            return None
-        return content
 
     def get_currencies(self, *args):
         db_query = 'SELECT * FROM Currencies'
@@ -82,18 +61,7 @@ class DBRequestHandler(BasicHandler):
         self.data = output
         return self
 
-    def __check_currency_code(self, curcode):
-        if (
-                type(curcode) != str or
-                len(curcode) != 3 or
-                not curcode.isalpha()
-        ):
-            print(curcode)
-            self.status = 400
-            self.data = '''Incorrect currency. Expected 3 latin letters, like "ABC" or "abc".'''
-            return None
 
-        return True
 
     def __check_get_currency_query(self, query):
         if 'currency' not in query:
@@ -212,6 +180,18 @@ class DBRequestHandler(BasicHandler):
         currency_to = query['to'][0]
         if not self.__check_currency_code(currency_from) or not self.__check_currency_code(currency_to):
             return None
+        return True
+
+    def __check_currency_code(self, curcode):
+        if (
+                type(curcode) != str or
+                len(curcode) != 3 or
+                not curcode.isalpha()
+        ):
+            self.status = 400
+            self.data = '''Incorrect currency. Expected 3 latin letters, like "ABC" or "abc".'''
+            return None
+
         return True
 
     def __get_currency_id_by_code(self, code):
