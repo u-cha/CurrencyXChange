@@ -182,7 +182,8 @@ class DBRequestHandler(BasicHandler):
         db_query = 'SELECT * FROM ExchangeRates WHERE BaseCurrencyId =? AND TargetCurrencyId =?'
         params = (self.__get_currency_id_by_code(currency_from), self.__get_currency_id_by_code(currency_to),)
         response = self.query_database(db_query, params)
-        if not self.__check_db_response(response): return self
+        if not self.__check_db_response(response):
+            return self
 
         exchangerates = response.fetchall()
         result = []
@@ -291,5 +292,42 @@ class DBRequestHandler(BasicHandler):
             self.status = 400
             self.content_type = 'text/html'
             self.data = 'Incorrect rate parameter. Rate should be string representation of integer/float'
+            return None
+        return True
+
+    def exchange(self, query):
+        if not self.__check_exchange_query(query):
+            return self
+        currency_from, currency_to, amount = query['from'][0], query['to'][0], round(float(query['amount'][0]), 6)
+
+        self.get_exchange_rate(query)
+        if self.status == 406:
+            self.content_type = 'text/html'
+            self.data = 'Currency exchange not available for this pair'
+            return self
+        if self.status == 200:
+            exchange_rate = float(self.data[0]['Rate'])
+            self.data = f'Given {query["amount"][0]} {query["from"][0]},  you get  {exchange_rate * float(query["amount"][0])}{query["to"][0]}'
+            return self
+        elif self.status == 500:
+            self.content_type = 'text/html'
+            self.data = 'Database error. Maybe you are trying to patch rates for currencies which are not present in database.'
+            return self
+        else:
+            return self
+
+
+    def __check_exchange_query(self, query):
+        if 'from' not in query or 'to' not in query or 'amount' not in query:
+            self.status = 400
+            self.content_type = 'text/html'
+            self.data = 'Missing parameter(s). Syntax is ?from=CurrencyCode&to=CurrencyCode&amount=amount'
+            return None
+        currency_from = query['from'][0]
+        currency_to = query['to'][0]
+        amount = query['amount'][0]
+        if not self.__check_currency_code(currency_from) or not self.__check_currency_code(currency_to):
+            return None
+        if not self.__check_rate_is_digit(amount):
             return None
         return True

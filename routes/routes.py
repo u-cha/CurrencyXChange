@@ -27,7 +27,7 @@ routes = {
     },
     '/exchange': {
         'method': {
-            'get': 'exchangerate'
+            'get': 'exchange'
         }
     },
     '404': {
